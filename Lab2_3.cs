@@ -9,63 +9,76 @@ using Newtonsoft.Json;
 
 namespace Lab2_3
 {
-    public class Rectangle
+    public class Point
     {
-        public double Width { get; set; }
-        public double Height { get; set; }
-        public double X { get; private set; }
-        public double Y { get; private set; }
+        public int X { get; set; }
+        public int Y { get; set; }
 
-        public Rectangle(double width, double height, double x, double y)
+        public Point(int x, int y)
         {
-            Width = width;
-            Height = height;
             X = x;
             Y = y;
         }
-
-        public void Move(double dx, double dy)
+        public override string ToString()
         {
-            X += dx;
-            Y += dy;
+            return $"({X}, {Y})";
+        }
+    }
+
+    public class Rectangle
+    {
+        public Point BottomLeft { get; set; }
+        public Point TopRight { get; set; }
+
+        public Rectangle(Point bottomLeft, Point topRight)
+        {
+            BottomLeft = bottomLeft;
+            TopRight = topRight;
         }
 
-        public void Resize(double newWidth, double newHeight)
+        public void Move(int deltaX, int deltaY)
         {
-            Width = newWidth;
-            Height = newHeight;
-        }
-        
-        public static Rectangle Combine(Rectangle rect1, Rectangle rect2)
-        {
-            double minX = Math.Min(rect1.X, rect2.X);
-            double minY = Math.Min(rect1.Y, rect2.Y);
-            double maxX = Math.Max(rect1.X + rect1.Width, rect2.X + rect2.Width);
-            double maxY = Math.Max(rect1.Y + rect1.Height, rect2.Y + rect2.Height);
-
-            double newWidth = maxX - minX;
-            double newHeight = maxY - minY;
-
-            return new Rectangle(newWidth, newHeight, minX, minY);
+            BottomLeft.X += deltaX;
+            BottomLeft.Y += deltaY;
+            TopRight.X += deltaX;
+            TopRight.Y += deltaY;
         }
 
-        public static Rectangle Intersection(Rectangle rect1, Rectangle rect2)
+        public void Resize(int newWidth, int newHeight)
         {
-            double left_x = Math.Max(rect1.X, rect2.X);
-            double width = Math.Min(rect1.X + rect1.Width, rect2.X + rect2.Width);
-            double left_y = Math.Max(rect1.Y, rect2.Y);
-            double height = Math.Min(rect1.Y + rect1.Height, rect2.Y + rect2.Height);
+            TopRight.X = BottomLeft.X + newWidth;
+            TopRight.Y = BottomLeft.Y + newHeight;
+        }
 
-            if (left_x < width && left_y < height)
+        public Rectangle Combine(Rectangle other)
+        {
+            int minX = Math.Min(this.BottomLeft.X, other.BottomLeft.X);
+            int minY = Math.Min(this.BottomLeft.Y, other.BottomLeft.Y);
+            int maxX = Math.Max(this.TopRight.X, other.TopRight.X);
+            int maxY = Math.Max(this.TopRight.Y, other.TopRight.Y);
+
+            return new Rectangle(new Point(minX, minY), new Point(maxX, maxY));
+        }
+
+        public Rectangle Intersection(Rectangle other)
+        {
+            int minX = Math.Max(this.BottomLeft.X, other.BottomLeft.X);
+            int minY = Math.Max(this.BottomLeft.Y, other.BottomLeft.Y);
+            int maxX = Math.Min(this.TopRight.X, other.TopRight.X);
+            int maxY = Math.Min(this.TopRight.Y, other.TopRight.Y);
+
+            if (minX <= maxX && minY <= maxY)
             {
-                double newWidth = width - left_x;
-                double newHeight = height - left_y;
-                return new Rectangle(newWidth, newHeight, left_x, left_y);
+                return new Rectangle(new Point(minX, minY), new Point(maxX, maxY));
             }
             else
             {
-                return new Rectangle(0, 0, 0, 0);
+                return new Rectangle(new Point(0, 0), new Point(0, 0));
             }
+        }
+        public override string ToString()
+        {
+            return $"Bottom Left: {BottomLeft}, Top Right: {TopRight}";
         }
     }
 
@@ -88,20 +101,28 @@ namespace Lab2_3
                 {
                     try
                     {
-                        Rectangle rect1 = new Rectangle(5, 3, 0, 0);
-                        Rectangle rect2 = new Rectangle(4, 6, 2, 2);
+                        Rectangle rect1 = new Rectangle(new Point(0, 0), new Point(5, 5));
+                        Rectangle rect2 = new Rectangle(new Point(2, 2), new Point(8, 8));
 
-                        rect1.Move(1, 1);
+                        Console.WriteLine("Initial rectangles:");
+                        Console.WriteLine("Rectangle 1: " + rect1);
+                        Console.WriteLine("Rectangle 2: " + rect2);
 
-                        rect2.Resize(6, 8);
+                        rect1.Move(2, 2);
+                        Console.WriteLine("\nAfter moving Rectangle 1:");
+                        Console.WriteLine("Rectangle 1: " + rect1);
 
-                        Rectangle combined = Rectangle.Combine(rect1, rect2);
-                        Console.WriteLine("Combined Rectangle: Width = {0}, Height = {1}, X = {2}, Y = {3}",
-                                          combined.Width, combined.Height, combined.X, combined.Y);
-                        
-                        Rectangle intersected = Rectangle.Intersection(rect1, rect2);
-                        Console.WriteLine("Intersect Rectangle: Width = {0}, Height = {1}, X = {2}, Y = {3}",
-                                          intersected.Width, intersected.Height, intersected.X, intersected.Y);
+                        rect2.Resize(2, 2);
+                        Console.WriteLine("\nAfter resizing Rectangle 2:");
+                        Console.WriteLine("Rectangle 2: " + rect2);
+
+                        Rectangle combinedRect = rect1.Combine(rect2);
+                        Console.WriteLine("\nCombined rectangle:");
+                        Console.WriteLine("Combined Rectangle: " + combinedRect);
+
+                        Rectangle intersectionRect = rect1.Intersection(rect2);
+                        Console.WriteLine("\nIntersection rectangle:");
+                        Console.WriteLine("Intersection Rectangle: " + intersectionRect);
                     }
                     catch (Exception e)
                     {
@@ -112,15 +133,16 @@ namespace Lab2_3
                 {
                     try
                     {
-                        Rectangle rectangle = new Rectangle(10, 5, 2, 3);
+                        Rectangle rectangle = new Rectangle(new Point(0, 0), new Point(5, 5));
 
                         Save(rectangle, "D:\\Projects_VS\\Lab2_3\\rectangle.json");
 
                         Rectangle restoredRectangle = Load("D:\\Projects_VS\\Lab2_3\\rectangle.json");
 
                         Console.WriteLine("Restored Rectangle:");
-                        Console.WriteLine($"Width: {restoredRectangle.Width}, Height: {restoredRectangle.Height}, " +
-                            $"X: {restoredRectangle.X}, Y: {restoredRectangle.Y}");
+                        Console.WriteLine($"Bottom Left: ({restoredRectangle.BottomLeft.X}, {restoredRectangle.BottomLeft.Y}), " +
+                                          $"Top Right: ({restoredRectangle.TopRight.X}, {restoredRectangle.TopRight.Y})");
+
                     }
                     catch (Exception e)
                     {
